@@ -37,29 +37,24 @@ intial_search_url <-
 
 # Testing search ----------------------------------------------------------
 
-source("connect.R")
-
-test_search_terms <-
+search_terms <-
   '("British Columbia" OR BC) AND ("Chinook salmon" OR "Oncorhynchus tshawytscha") AND (juvenile* OR immature* OR smolt*) AND (neville OR trudel OR riddell)'
-test_search_url <-
+
+search_url <-
   "https://science-libraries.canada.ca/eng/search/" %>%
   param_set("fc", "Library%3ADFO-MPO") %>%
   param_set("fs", "IsLibraryCatalogue%3A1") %>%
-  param_set("q", url_encode(test_search_terms)) %>%
+  param_set("q", url_encode(search_terms)) %>%
   param_set("sm", 1)
 
-c(has_next, get_next, get_ids) %<-% connect(test_search_url)
+source("connect.R")
 
-save_item_by_id <- function(id) {
-  print(glue(
-    "https://science-libraries.canada.ca/eng/search/save-items/?id={id}"
-  ))
-}
+c(has_next, get_next, get_ids, save_item, saved_items, download_csv) %<-% connect(search_url)
 
 repeat {
   for (id in get_ids()) {
-    save_item_by_id(id)
-    test_search_url
+    save_item(id)
+    Sys.sleep(1)
   }
   if (has_next()) {
     get_next()
@@ -68,64 +63,91 @@ repeat {
   }
 }
 
-print("there are no more pages (and no next button)")
-print("download a csv")
+download_csv("test.csv")
 
 # Chinook salmon search ----------------------------------------------------------
 # search terms returned 326 results (Oct 31, 2021)
 
-chinook_search_terms <-
+search_terms <-
   '("British Columbia" OR BC) AND (juvenile* OR immature* OR smolt*) AND ("Chinook salmon" OR "Chinook" OR "Oncorhynchus tshawytscha" OR "O. tshawytscha")'
 
-chinook_search_url <-
-  "https://science-libraries.canada.ca/eng/search/" %>%
-  param_set("fc", "Library%3ADFO-MPO") %>%
-  param_set("fs", "IsLibraryCatalogue%3A1") %>%
-  param_set("q", url_encode(chinook_search_terms)) %>%
-  param_set("sm", 1)
 
-# open and maintain a session across multiple requests (being the various pages and calls to save results)
-results_page <- session(chinook_search_url)
 
-# move to the next page
-while (results_page) {
-  tryCatch({
-    results_page <- session_follow_link(css = "a[rel=next]")
-  },
-  error = function(e) {
-    results_page = FALSE
-  })
-  print("got a page")
-  
-}
-print("no more pages")
 
 
 # Chum salmon search ----------------------------------------------------------
 # search terms returned 178 results (Oct 31, 2021)
 
-chum_search_terms <-
+search_terms <-
   '("British Columbia" OR BC) AND (juvenile* OR immature* OR smolt*) AND ("Chum salmon" OR "Chum" OR "Oncorhynchus keta" OR "O. keta")'
   
+search_url <-
+  "https://science-libraries.canada.ca/eng/search/" %>%
+  param_set("fc", "Library%3ADFO-MPO") %>%
+  param_set("fs", "IsLibraryCatalogue%3A1") %>%
+  param_set("q", url_encode(search_terms)) %>%
+  param_set("sm", 1)
+
+source("connect.R")
+
+c(has_next, get_next, get_ids, save_item, saved_items, download_csv) %<-% connect(search_url)
+
+repeat {
+  for (id in get_ids()) {
+    save_item(id)
+    Sys.sleep(1)
+  }
+  if (has_next()) {
+    get_next()
+  } else {
+    break
+  }
+}
+
+download_csv("chum.csv")
 
 # Coho salmon search ----------------------------------------------------------
 # search terms returned 491 results (Oct 31, 2021)
 
-coho_search_terms <-
+search_terms <-
   '("British Columbia" OR BC) AND (juvenile* OR immature* OR smolt*) AND ("Coho salmon" OR "Coho" OR "Oncorhynchus kisutch" OR "O. kisutch")'
 
 
-# Pink salmon search ----------------------------------------------------------
+# Pink salmon searches ----------------------------------------------------------
 # search terms returned 139 results (Oct 31, 2021)
 
-pink_search_terms <-
+search_terms <-
   '("British Columbia" OR BC) AND (juvenile* OR immature* OR smolt*) AND ("Pink salmon" OR "Pink" OR "Oncorhynchus gorbuscha" OR "O. gorbuscha")'
   
+search_url <-
+  "https://science-libraries.canada.ca/eng/search/" %>%
+  param_set("fc", "Library%3ADFO-MPO") %>%
+  param_set("fs", "IsLibraryCatalogue%3A1") %>%
+  param_set("q", url_encode(search_terms)) %>%
+  param_set("sm", 1)
+
+source("connect.R")
+
+c(has_next, get_next, get_ids, save_item, saved_items, download_csv) %<-% connect(search_url)
+
+repeat {
+  for (id in get_ids()) {
+    save_item(id)
+    Sys.sleep(1)
+  }
+  if (has_next()) {
+    get_next()
+  } else {
+    break
+  }
+}
+
+download_csv("pink.csv")
 
 # Sockeye salmon search ----------------------------------------------------------
 # search terms returned 303 results (Oct 31, 2021)
 
-sockeye_search_terms <-
+search_terms <-
   '("British Columbia" OR BC) AND (juvenile* OR immature* OR smolt*) AND ("Sockeye salmon" OR "Sockeye" OR "Oncorhynchus nerka" OR "O. nerka")'
 
 
@@ -135,11 +157,11 @@ sockeye_search_terms <-
 
 # collate searches for all five species
 all_results <-
-  bind_rows(chinook_results,
-            chum_results,
-            coho_results,
-            pink_results,
-            sockeye_results)
+  bind_rows(chinook,
+            chum,
+            coho,
+            pink,
+            sockeye)
 
 # remove duplicates
 all_results_no_duplicates <- unique(all_results)

@@ -35,6 +35,38 @@ intial_search_url <-
   param_set("q", url_encode(intial_search_terms)) %>%
   param_set("sm", 1)
 
+# Testing 10 at a time search ----------------------------------------------------------
+# 23 search results
+
+search_terms <-
+  '("British Columbia" OR BC) AND ("Chinook salmon" OR "Oncorhynchus tshawytscha") AND (juvenile* OR immature* OR smolt*) AND (neville OR trudel OR riddell)'
+
+search_url <-
+  "https://science-libraries.canada.ca/eng/search/" %>%
+  param_set("fc", "Library%3ADFO-MPO") %>%
+  param_set("fs", "IsLibraryCatalogue%3A1") %>%
+  param_set("q", url_encode(search_terms)) %>%
+  param_set("sm", 1)
+
+source("connect.R")
+
+count <- 1
+repeat {
+  c(has_next, get_next, get_ids, save_item, saved_items, download_csv) %<-% connect(search_url)
+  for (id in get_ids()) {
+    save_item(id)
+    Sys.sleep(1)
+  }
+  download_csv(glue("test-page-{count}.csv"))
+  count <- count + 1
+  if (has_next()) {
+    get_next()
+  } else {
+    break
+  }
+}
+
+
 # Testing search ----------------------------------------------------------
 
 search_terms <-
